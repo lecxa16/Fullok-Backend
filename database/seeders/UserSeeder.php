@@ -13,13 +13,14 @@ class UserSeeder extends Seeder
         $adminRole = Role::where('slug', 'admin')->first();
 
         User::updateOrCreate(
-            ['email' => 'admin@admin.com'],
+            ['email' => 'admin@fullok.mx'],
             [
-                'name' => 'Administrador',
-                'email' => 'admin@admin.com',
-                'password' => bcrypt('Admin1234'),
-                'role_id' => $adminRole->id,
-                'activo' => true,
+                'nombre'           => 'Admin',
+                'apellido_paterno' => 'Fullok',
+                'email'            => 'admin@fullok.mx',
+                'password'         => bcrypt('Admin1234'),
+                'role_id'          => $adminRole?->id,
+                'activo'           => true,
             ]
         );
     }

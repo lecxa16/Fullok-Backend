@@ -11,9 +11,14 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             [
-                'nombre' => 'Administrador',
-                'slug' => 'admin',
+                'nombre'      => 'Administrador',
+                'slug'        => 'admin',
                 'descripcion' => 'Acceso total al sistema',
+            ],
+            [
+                'nombre'      => 'Cliente',
+                'slug'        => 'client',
+                'descripcion' => 'Cliente de la app Fullok Wallet',
             ],
         ];
 

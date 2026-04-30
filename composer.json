@@ -1,7 +1,7 @@
 {
-    "name": "camper/laravel-docker-template",
+    "name": "fullok/wallet-backend",
     "type": "project",
-    "description": "Laravel API Backend Template con Docker",
+    "description": "Fullok Wallet — API Backend",
     "keywords": ["laravel", "api", "template", "docker"],
     "license": "MIT",
     "require": {

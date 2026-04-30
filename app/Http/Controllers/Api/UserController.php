@@ -7,100 +7,81 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    // Lista todos los usuarios — solo admin
     public function index(): JsonResponse
     {
-        $users = User::with('role')->orderBy('name')->get();
+        $users = User::with('role')
+            ->orderBy('apellido_paterno')
+            ->orderBy('nombre')
+            ->get();
+
         return response()->json($users);
     }
 
-    public function store(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
-            ],
-            'role_id' => 'required|exists:roles,id',
-            'activo' => 'boolean',
-        ], [
-            'password.regex' => 'La contraseña debe tener al menos 1 mayúscula, 1 minúscula y 1 número.',
-        ]);
-
-        $validated['password'] = Hash::make($validated['password']);
-        $validated['activo'] = $validated['activo'] ?? true;
-
-        $user = User::create($validated);
-        $user->load('role');
-
-        return response()->json($user, 201);
-    }
-
+    // Ver un usuario — solo admin
     public function show(User $usuario): JsonResponse
     {
-        $usuario->load('role');
         return response()->json($usuario);
     }
 
+    // Editar usuario — solo admin
     public function update(Request $request, User $usuario): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'email', Rule::unique('users')->ignore($usuario->id)],
-            'password' => [
+            'nombre'           => 'sometimes|required|string|max:100',
+            'apellido_paterno' => 'sometimes|required|string|max:100',
+            'apellido_materno' => 'sometimes|nullable|string|max:100',
+            'telefono'         => 'sometimes|nullable|string|max:20',
+            'email'            => [
                 'sometimes',
-                'nullable',
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
+                'required',
+                'email',
+                Rule::unique('users')->ignore($usuario->id)
             ],
-            'role_id' => 'sometimes|required|exists:roles,id',
-            'activo' => 'sometimes|boolean',
-        ], [
-            'password.regex' => 'La contraseña debe tener al menos 1 mayúscula, 1 minúscula y 1 número.',
+            'genero'           => 'sometimes|in:masculino,femenino,otro,prefiero_no_decir',
+            'fecha_nacimiento' => 'sometimes|date|before:today',
+            'role_id'          => 'sometimes|required|exists:roles,id',
+            'activo'           => 'sometimes|boolean',
+            'password'         => 'sometimes|nullable|string|min:6',
         ]);
 
         if (isset($validated['password']) && $validated['password']) {
-            $validated['password'] = Hash::make($validated['password']);
+            $validated['password'] = bcrypt($validated['password']);
         } else {
             unset($validated['password']);
         }
 
         $usuario->update($validated);
-        $usuario->load('role');
 
-        return response()->json($usuario);
+        return response()->json($usuario->fresh());
     }
 
+    // Eliminar usuario — solo admin
     public function destroy(User $usuario): JsonResponse
     {
-        // Prevent deleting yourself
         if (auth()->id() === $usuario->id) {
-            return response()->json(['message' => 'No puedes eliminar tu propio usuario'], 403);
+            return response()->json([
+                'message' => 'No puedes eliminarte a ti mismo.',
+            ], 403);
         }
 
         try {
             $usuario->delete();
             return response()->json(null, 204);
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Foreign key constraint — user has related records
+        } catch (\Illuminate\Database\QueryException) {
             return response()->json([
-                'message' => 'No se puede eliminar este usuario porque tiene registros asociados. Puedes desactivarlo en su lugar.'
+                'message' => 'No se puede eliminar, tiene registros asociados. Desactívalo en su lugar.',
             ], 422);
         }
     }
 
+    // Lista de roles — para formularios del admin
     public function roles(): JsonResponse
     {
-        $roles = Role::orderBy('nombre')->get();
-        return response()->json($roles);
+        return response()->json(Role::orderBy('nombre')->get());
     }
 }

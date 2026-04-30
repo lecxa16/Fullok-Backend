@@ -28,3 +28,7 @@ storage/framework/views/*.php
 
 # Logs
 storage/logs/*.log
+
+# macOS
+.DS_Store
+**/.DS_Store
