@@ -32,3 +32,23 @@ storage/logs/*.log
 # macOS
 .DS_Store
 **/.DS_Store
+
+# Claude
+CLAUDE.md
+.claude/
+.claude.json
+.claudeignore
+
+# App móvil (Expo) — tiene su propio repositorio de GitHub
+# OJO: NO usar `/App/` con mayúscula — en macOS (case-insensitive) ignora también `app/` (código Laravel).
+/App-movil/
+
+# Admin web (React) — tiene su propio repositorio de GitHub
+/Admin/
+
+# Screenshots locales de Playwright/dev (no van al repo)
+/admin-*.png
+/program-*.png
+/stations-*.png
+/rewards-*.png
+/.playwright-mcp/

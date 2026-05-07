@@ -1,0 +1,66 @@
+name: fullok-prod
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: fullok-prod_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./public:/var/www/html/public:ro
+      - /root/fullok/data/admin-dist:/srv/admin:ro
+      - /root/fullok/data/caddy/data:/data
+      - /root/fullok/data/caddy/config:/config
+      - /root/fullok/logs:/var/log/caddy
+    depends_on:
+      - app
+    networks:
+      - fullok_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: fullok-prod_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    volumes:
+      - ./public:/var/www/html/public
+      - /root/fullok/data/storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fullok_net
+
+  db:
+    image: mysql:8.0
+    container_name: fullok-prod_db
+    restart: unless-stopped
+    command: --default-authentication-plugin=caching_sha2_password --innodb-buffer-pool-size=256M
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - /root/fullok/data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fullok_net
+
+networks:
+  fullok_net:
+    driver: bridge

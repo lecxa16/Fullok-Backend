@@ -1,6 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PointsController;
+use App\Http\Controllers\Api\ProgramSettingsController;
+use App\Http\Controllers\Api\RewardController;
+use App\Http\Controllers\Api\RewardInventoryController;
+use App\Http\Controllers\Api\SimulatorScenarioController;
+use App\Http\Controllers\Api\StationController;
+use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +24,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me',      [AuthController::class, 'me']);
 
+    // Estaciones (lectura) — cualquier usuario autenticado, p. ej. cliente desde la app móvil
+    Route::get('/stations',             [StationController::class, 'index']);
+    Route::get('/stations/{station}',   [StationController::class, 'show']);
+
+    // Recompensas (catálogo) — visible para todos los autenticados
+    Route::get('/rewards',                       [RewardController::class, 'index']);
+    Route::get('/rewards/{reward}',              [RewardController::class, 'show']);
+    Route::get('/rewards/{reward}/availability', [RewardInventoryController::class, 'availability']);
+
+    // Mi balance, transacciones, canjes
+    Route::get('/me/points/balance',      [PointsController::class, 'myBalance']);
+    Route::get('/me/points/transactions', [PointsController::class, 'myTransactions']);
+    Route::post('/me/redemptions',        [PointsController::class, 'redeem']);
+    Route::get('/me/redemptions',         [PointsController::class, 'myRedemptions']);
+
+    // Mis tickets de carga
+    Route::post('/me/tickets/extract', [TicketController::class, 'extract']);
+    Route::post('/me/tickets',         [TicketController::class, 'store']);
+    Route::get('/me/tickets',          [TicketController::class, 'myIndex']);
+    Route::get('/me/tickets/{ticket}', [TicketController::class, 'myShow']);
+
     // Solo admin
     Route::middleware('role:admin')->group(function () {
         Route::get('/roles',                 [UserController::class, 'roles']);
@@ -24,6 +52,41 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/usuarios/{usuario}',    [UserController::class, 'show']);
         Route::put('/usuarios/{usuario}',    [UserController::class, 'update']);
         Route::delete('/usuarios/{usuario}', [UserController::class, 'destroy']);
+
+        Route::get('/program-settings',          [ProgramSettingsController::class, 'index']);
+        Route::put('/program-settings',          [ProgramSettingsController::class, 'update']);
+        Route::get('/program-settings/history',  [ProgramSettingsController::class, 'history']);
+
+        Route::apiResource('scenarios', SimulatorScenarioController::class)
+            ->parameters(['scenarios' => 'scenario']);
+
+        // Estaciones — solo mutaciones para admin (lectura ya está fuera del grupo admin)
+        Route::post('/stations',                [StationController::class, 'store']);
+        Route::put('/stations/{station}',       [StationController::class, 'update']);
+        Route::delete('/stations/{station}',    [StationController::class, 'destroy']);
+
+        // Recompensas — mutaciones solo admin (lectura ya está fuera del grupo)
+        Route::post('/rewards',           [RewardController::class, 'store']);
+        Route::put('/rewards/{reward}',   [RewardController::class, 'update']);
+        Route::delete('/rewards/{reward}',[RewardController::class, 'destroy']);
+
+        // Inventario de recompensas por sucursal (admin)
+        Route::get('/rewards/{reward}/inventory', [RewardInventoryController::class, 'show']);
+        Route::put('/rewards/{reward}/inventory', [RewardInventoryController::class, 'update']);
+
+        // Canjes (admin) — listar todos y marcar como usado
+        Route::get('/redemptions',                       [PointsController::class, 'adminIndex']);
+        Route::post('/redemptions/{redemption}/mark-used', [PointsController::class, 'adminMarkUsed']);
+
+        // Tickets (admin) — revisar y aprobar/rechazar
+        Route::get('/tickets',                  [TicketController::class, 'adminIndex']);
+        Route::get('/tickets/{ticket}',         [TicketController::class, 'adminShow']);
+        Route::post('/tickets/{ticket}/approve', [TicketController::class, 'approve']);
+        Route::post('/tickets/{ticket}/reject',  [TicketController::class, 'reject']);
+
+        // Puntos: ajuste manual y consulta de balance de cualquier usuario
+        Route::post('/usuarios/{usuario}/points-adjustment', [PointsController::class, 'adminAdjust']);
+        Route::get('/usuarios/{usuario}/balance',            [PointsController::class, 'adminUserBalance']);
     });
 
 });

@@ -1,0 +1,57 @@
+{
+    email carlos.ordonez1690@gmail.com
+}
+
+api.fullok.mx {
+    root * /var/www/html/public
+    encode zstd gzip
+
+    php_fastcgi app:9000
+
+    file_server
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    log {
+        output file /var/log/caddy/api-access.log {
+            roll_size 10MiB
+            roll_keep 5
+        }
+        format json
+    }
+}
+
+admin.fullok.mx {
+    root * /srv/admin
+    encode zstd gzip
+
+    @assets {
+        path /assets/*
+    }
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+
+    try_files {path} /index.html
+    file_server
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    log {
+        output file /var/log/caddy/admin-access.log {
+            roll_size 10MiB
+            roll_keep 5
+        }
+        format json
+    }
+}

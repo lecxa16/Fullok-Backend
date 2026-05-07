@@ -1,0 +1,60 @@
+FROM php:8.2-fpm-alpine AS base
+
+RUN apk add --no-cache \
+        bash \
+        curl \
+        git \
+        unzip \
+        icu-dev \
+        oniguruma-dev \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        mysql-client \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        mbstring \
+        bcmath \
+        intl \
+        zip \
+        gd \
+        exif \
+        opcache
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY docker/prod/php.ini /usr/local/etc/php/conf.d/zz-fullok.ini
+COPY docker/prod/php-fpm.conf /usr/local/etc/php-fpm.d/zz-fullok.conf
+
+WORKDIR /var/www/html
+
+FROM base AS vendor
+
+COPY composer.json composer.lock ./
+RUN composer install \
+        --no-dev \
+        --no-scripts \
+        --no-autoloader \
+        --prefer-dist \
+        --no-interaction \
+        --no-progress
+
+FROM base AS app
+
+COPY --from=vendor /var/www/html/vendor ./vendor
+COPY . .
+
+RUN composer dump-autoload --no-dev --optimize --classmap-authoritative \
+    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+COPY docker/prod/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 9000
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["php-fpm"]
