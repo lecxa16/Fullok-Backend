@@ -61,6 +61,23 @@ services:
     networks:
       - fullok_net
 
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: fullok-prod_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8083:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ABSOLUTE_URI: http://localhost:8083/
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fullok_net
+
 networks:
   fullok_net:
     driver: bridge
