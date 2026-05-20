@@ -14,6 +14,7 @@ class TicketService
     public function __construct(
         private PointsService $points,
         private TickerCalculator $calculator,
+        private NotificationService $notifications,
     ) {
     }
 
@@ -43,10 +44,13 @@ class TicketService
             throw new RuntimeException("El ticket ya está en estado '{$ticket->estado}'.");
         }
 
-        return DB::transaction(function () use ($ticket, $adminId) {
+        // Capturamos tier ANTES del award para detectar subida de nivel
+        $tierBefore = $this->points->getProfileStats($ticket->user_id)['tier'];
+
+        $fresh = DB::transaction(function () use ($ticket, $adminId) {
             $calc = $this->calculator->pointsForAmount($ticket->user_id, $ticket->monto);
 
-            $tx = $this->points->award(
+            $this->points->award(
                 $ticket->user_id,
                 $calc['puntos'],
                 'ganado',
@@ -70,6 +74,39 @@ class TicketService
 
             return $ticket->fresh(['user', 'station', 'revisadoBy']);
         });
+
+        $this->notifications->notify(
+            $ticket->user_id,
+            'ticket_approved',
+            '¡Ticket aprobado!',
+            "+{$fresh->puntos_acreditados} pts acreditados por tu carga en {$fresh->station->nombre}.",
+            [
+                'icon' => 'checkmark-circle',
+                'deeplink' => "fullok://tickets/{$fresh->id}",
+                'prioridad' => 'high',
+                'payload' => ['ticket_id' => $fresh->id, 'puntos' => $fresh->puntos_acreditados],
+            ],
+        );
+
+        // Si el tier subió, notificar
+        $tierAfter = $this->points->getProfileStats($ticket->user_id)['tier'];
+        if ($tierBefore !== $tierAfter) {
+            $labels = ['bronze' => 'BRONCE', 'silver' => 'PLATA', 'gold' => 'ORO'];
+            $this->notifications->notify(
+                $ticket->user_id,
+                'tier_up',
+                '¡Subiste de nivel! 🎉',
+                "Ahora eres nivel " . ($labels[$tierAfter] ?? strtoupper($tierAfter)) . ". Disfruta multiplicadores más altos en tus puntos.",
+                [
+                    'icon' => 'trophy',
+                    'deeplink' => 'fullok://rewards',
+                    'prioridad' => 'high',
+                    'payload' => ['tier' => $tierAfter, 'tier_previo' => $tierBefore],
+                ],
+            );
+        }
+
+        return $fresh;
     }
 
     public function reject(Ticket $ticket, int $adminId, string $motivo): Ticket
@@ -85,6 +122,21 @@ class TicketService
             'revisado_at' => now(),
         ]);
 
-        return $ticket->fresh(['user', 'station', 'revisadoBy']);
+        $fresh = $ticket->fresh(['user', 'station', 'revisadoBy']);
+
+        $this->notifications->notify(
+            $ticket->user_id,
+            'ticket_rejected',
+            'Tu ticket fue rechazado',
+            $motivo,
+            [
+                'icon' => 'close-circle',
+                'deeplink' => "fullok://tickets/{$fresh->id}",
+                'prioridad' => 'high',
+                'payload' => ['ticket_id' => $fresh->id, 'motivo' => $motivo],
+            ],
+        );
+
+        return $fresh;
     }
 }

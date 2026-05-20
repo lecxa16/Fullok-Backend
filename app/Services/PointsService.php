@@ -15,6 +15,8 @@ use RuntimeException;
 
 class PointsService
 {
+    public function __construct(private NotificationService $notifications) {}
+
     public function getBalance(int $userId): int
     {
         return (int) PointTransaction::where('user_id', $userId)->sum('puntos');
@@ -181,6 +183,25 @@ class PointsService
 
             return $redemption->fresh(['reward', 'station']);
         });
+    }
+
+    public function notifyRedemption(\App\Models\Redemption $redemption): void
+    {
+        $this->notifications->notify(
+            $redemption->user_id,
+            'redemption_done',
+            '¡Canje completado!',
+            "Código {$redemption->codigo_unico} — recoge tu {$redemption->reward_nombre_snapshot} en {$redemption->station_nombre_snapshot}.",
+            [
+                'icon' => 'gift',
+                'deeplink' => "fullok://redemptions/{$redemption->id}",
+                'prioridad' => 'high',
+                'payload' => [
+                    'redemption_id' => $redemption->id,
+                    'codigo' => $redemption->codigo_unico,
+                ],
+            ],
+        );
     }
 
     public function markUsed(Redemption $redemption, ?int $adminUserId = null): Redemption

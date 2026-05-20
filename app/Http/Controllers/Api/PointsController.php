@@ -63,6 +63,8 @@ class PointsController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        $this->points->notifyRedemption($redemption);
+
         return response()->json([
             'redemption' => $redemption,
             'balance' => $this->points->getBalance($request->user()->id),

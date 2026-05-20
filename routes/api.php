@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PointsController;
 use App\Http\Controllers\Api\ProgramSettingsController;
+use App\Http\Controllers\Api\PushTokenController;
 use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\RewardInventoryController;
 use App\Http\Controllers\Api\SimulatorScenarioController;
@@ -39,6 +41,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me/points/transactions', [PointsController::class, 'myTransactions']);
     Route::post('/me/redemptions',        [PointsController::class, 'redeem']);
     Route::get('/me/redemptions',         [PointsController::class, 'myRedemptions']);
+
+    // Notificaciones in-app
+    Route::get('/me/notifications',                       [NotificationController::class, 'index']);
+    Route::get('/me/notifications/unread-count',          [NotificationController::class, 'unreadCount']);
+    Route::post('/me/notifications/read-all',             [NotificationController::class, 'markAllRead']);
+    Route::post('/me/notifications/{notification}/read',  [NotificationController::class, 'markRead']);
+    Route::delete('/me/notifications/{notification}',     [NotificationController::class, 'destroy']);
+
+    // Push tokens (registro desde la app)
+    Route::post('/me/push-tokens',           [PushTokenController::class, 'register']);
+    Route::delete('/me/push-tokens/{token}', [PushTokenController::class, 'destroy']);
 
     // Mis tickets de carga
     Route::post('/me/tickets/extract', [TicketController::class, 'extract']);
