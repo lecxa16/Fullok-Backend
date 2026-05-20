@@ -28,6 +28,13 @@ class PointsController extends Controller
         ]);
     }
 
+    public function myProfileStats(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->points->getProfileStats($request->user()->id),
+        );
+    }
+
     public function myTransactions(Request $request): JsonResponse
     {
         $userId = $request->user()->id;

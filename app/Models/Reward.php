@@ -5,13 +5,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class Reward extends Model
 {
     protected $fillable = [
-        'nombre', 'descripcion', 'costo_puntos', 'tipo', 'imagen_url',
+        'nombre', 'descripcion', 'costo_puntos', 'tipo', 'imagen_url', 'imagen_path',
         'stock', 'inicia_at', 'termina_at', 'activo',
     ];
+
+    /**
+     * Si hay imagen subida (imagen_path), la URL pública la sobrescribe.
+     * Si no, se conserva la URL externa (imagen_url). Esto mantiene compat
+     * con clientes que ya leen `imagen_url`.
+     */
+    public function getImagenUrlAttribute(?string $value): ?string
+    {
+        if ($this->imagen_path) {
+            return Storage::disk('public')->url($this->imagen_path);
+        }
+        return $value;
+    }
 
     public function inventories(): HasMany
     {

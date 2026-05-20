@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Reward;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RewardController extends Controller
 {
@@ -44,8 +45,37 @@ class RewardController extends Controller
 
     public function destroy(Reward $reward): JsonResponse
     {
+        if ($reward->imagen_path) {
+            Storage::disk('public')->delete($reward->imagen_path);
+        }
         $reward->delete();
         return response()->json(['ok' => true]);
+    }
+
+    public function uploadImage(Request $request, Reward $reward): JsonResponse
+    {
+        $request->validate([
+            'imagen' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], // 5 MB
+        ]);
+
+        // Borrar imagen anterior (si existía) para no acumular basura
+        if ($reward->imagen_path) {
+            Storage::disk('public')->delete($reward->imagen_path);
+        }
+
+        $path = $request->file('imagen')->store('rewards/' . $reward->id, 'public');
+        $reward->update(['imagen_path' => $path]);
+
+        return response()->json($reward->fresh());
+    }
+
+    public function deleteImage(Reward $reward): JsonResponse
+    {
+        if ($reward->imagen_path) {
+            Storage::disk('public')->delete($reward->imagen_path);
+            $reward->update(['imagen_path' => null]);
+        }
+        return response()->json($reward->fresh());
     }
 
     private function validateData(Request $request): array

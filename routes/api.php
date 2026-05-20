@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Mi balance, transacciones, canjes
     Route::get('/me/points/balance',      [PointsController::class, 'myBalance']);
+    Route::get('/me/points/stats',        [PointsController::class, 'myProfileStats']);
     Route::get('/me/points/transactions', [PointsController::class, 'myTransactions']);
     Route::post('/me/redemptions',        [PointsController::class, 'redeem']);
     Route::get('/me/redemptions',         [PointsController::class, 'myRedemptions']);
@@ -66,9 +67,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/stations/{station}',    [StationController::class, 'destroy']);
 
         // Recompensas — mutaciones solo admin (lectura ya está fuera del grupo)
-        Route::post('/rewards',           [RewardController::class, 'store']);
-        Route::put('/rewards/{reward}',   [RewardController::class, 'update']);
-        Route::delete('/rewards/{reward}',[RewardController::class, 'destroy']);
+        Route::post('/rewards',                  [RewardController::class, 'store']);
+        Route::put('/rewards/{reward}',          [RewardController::class, 'update']);
+        Route::delete('/rewards/{reward}',       [RewardController::class, 'destroy']);
+        Route::post('/rewards/{reward}/image',   [RewardController::class, 'uploadImage']);
+        Route::delete('/rewards/{reward}/image', [RewardController::class, 'deleteImage']);
 
         // Inventario de recompensas por sucursal (admin)
         Route::get('/rewards/{reward}/inventory', [RewardInventoryController::class, 'show']);

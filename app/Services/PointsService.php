@@ -21,6 +21,61 @@ class PointsService
     }
 
     /**
+     * Estadísticas agregadas del usuario para mostrar en perfil/rewards.
+     * Incluye balance, tier actual (basado en puntos ganados en últimos 12m
+     * vs umbrales de program_settings) y totales de ganados/canjeados.
+     */
+    public function getProfileStats(int $userId): array
+    {
+        $balance = (int) PointTransaction::where('user_id', $userId)->sum('puntos');
+
+        $ganadosTotal = (int) PointTransaction::where('user_id', $userId)
+            ->where('puntos', '>', 0)
+            ->sum('puntos');
+
+        $canjeadosTotal = (int) abs(
+            PointTransaction::where('user_id', $userId)
+                ->where('puntos', '<', 0)
+                ->sum('puntos')
+        );
+
+        $ganados12m = (int) PointTransaction::where('user_id', $userId)
+            ->where('puntos', '>', 0)
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->sum('puntos');
+
+        $silverThreshold = (int) (ProgramSetting::getValue('tier_silver_threshold') ?? 1500);
+        $goldThreshold = (int) (ProgramSetting::getValue('tier_gold_threshold') ?? 4000);
+
+        if ($ganados12m >= $goldThreshold) {
+            $tier = 'gold';
+            $nextTier = null;
+            $nextThreshold = null;
+        } elseif ($ganados12m >= $silverThreshold) {
+            $tier = 'silver';
+            $nextTier = 'gold';
+            $nextThreshold = $goldThreshold;
+        } else {
+            $tier = 'bronze';
+            $nextTier = 'silver';
+            $nextThreshold = $silverThreshold;
+        }
+
+        return [
+            'balance' => $balance,
+            'puntos_ganados_total' => $ganadosTotal,
+            'puntos_canjeados_total' => $canjeadosTotal,
+            'puntos_ganados_12m' => $ganados12m,
+            'tier' => $tier,
+            'next_tier' => $nextTier,
+            'next_tier_threshold' => $nextThreshold,
+            'puntos_faltantes_next_tier' => $nextThreshold !== null
+                ? max(0, $nextThreshold - $ganados12m)
+                : 0,
+        ];
+    }
+
+    /**
      * Otorga puntos al usuario. Crea una point_transaction tipo "ganado" o "ajuste_admin".
      *
      * @param int    $userId
