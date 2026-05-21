@@ -26,6 +26,13 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-code',     [AuthController::class, 'verifyCode']);
 Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 
+// Descarga firmada de facturas — no requiere Bearer porque el browser no lo
+// manda. Acepta solo URLs firmadas (5 min de validez) generadas por el
+// endpoint /me/invoices/{id}/download-url.
+Route::get('/invoices/{invoice}/download/{kind}', [InvoiceController::class, 'downloadSigned'])
+    ->middleware('signed')
+    ->name('invoices.download');
+
 // ── Protegidas — requieren token Sanctum ───────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -80,8 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/me/invoices',                   [InvoiceController::class, 'request']);
     Route::get('/me/invoices/{invoice}',          [InvoiceController::class, 'show']);
     Route::post('/me/invoices/{invoice}/cancel',  [InvoiceController::class, 'cancel']);
-    Route::get('/me/invoices/{invoice}/{kind}',   [InvoiceController::class, 'download'])
-        ->where('kind', 'pdf|xml');
+    Route::get('/me/invoices/{invoice}/download-url', [InvoiceController::class, 'signDownloadUrl']);
 
     // Mis tickets de carga
     Route::post('/me/tickets/extract', [TicketController::class, 'extract']);
@@ -136,6 +142,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Dashboard admin (métricas agregadas)
         Route::get('/admin/dashboard', [DashboardController::class, 'index']);
+
+        // Facturas (admin) — listado, métricas y URL firmada de descarga
+        Route::get('/admin/invoices',                    [InvoiceController::class, 'adminIndex']);
+        Route::get('/admin/invoices/stats',              [InvoiceController::class, 'adminStats']);
+        Route::get('/admin/invoices/{invoice}/download-url', [InvoiceController::class, 'adminSignDownload']);
 
         // Encuestas — admin CRUD + métricas
         Route::get('/admin/surveys',                              [SurveyController::class, 'adminIndex']);

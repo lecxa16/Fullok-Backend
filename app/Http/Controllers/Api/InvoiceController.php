@@ -146,14 +146,88 @@ class InvoiceController extends Controller
         return response()->json($invoice);
     }
 
+    // ── Admin ────────────────────────────────────────────────────────────
+
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->query('per_page', 30), 100);
+        $q = Invoice::with([
+                'user:id,nombre,apellido_paterno,email',
+                'ticket:id,folio,fecha_ticket,tipo_combustible,monto,station_id',
+                'ticket.station:id,nombre',
+                'taxProfile:id,alias,rfc,razon_social',
+            ])
+            ->orderByDesc('created_at');
+
+        if ($s = $request->query('estado')) $q->where('estado', $s);
+        if ($s = $request->query('user_id')) $q->where('user_id', $s);
+        if ($s = $request->query('from')) $q->where('created_at', '>=', $s);
+        if ($s = $request->query('to')) $q->where('created_at', '<=', $s);
+
+        return response()->json($q->paginate($perPage));
+    }
+
+    public function adminStats(): JsonResponse
+    {
+        return response()->json([
+            'total_emitidas' => Invoice::where('estado', 'generated')->count(),
+            'mes_actual' => Invoice::where('estado', 'generated')
+                ->whereMonth('emitida_at', now()->month)
+                ->whereYear('emitida_at', now()->year)
+                ->count(),
+            'con_error' => Invoice::where('estado', 'error')->count(),
+            'monto_total_mes' => (float) Invoice::where('estado', 'generated')
+                ->whereMonth('emitida_at', now()->month)
+                ->whereYear('emitida_at', now()->year)
+                ->sum('monto_total'),
+        ]);
+    }
+
+    public function adminSignDownload(Request $request, Invoice $invoice): JsonResponse
+    {
+        if ($invoice->estado !== 'generated') {
+            abort(422, 'La factura aún no está disponible para descargar.');
+        }
+        $kind = $request->query('kind', 'pdf');
+        if (! in_array($kind, ['pdf', 'xml'], true)) abort(422, 'kind inválido.');
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'invoices.download',
+            now()->addMinutes(5),
+            ['invoice' => $invoice->id, 'kind' => $kind],
+        );
+        return response()->json(['url' => $url, 'expires_in' => 300]);
+    }
+
     /**
-     * Proxy de descarga: pega a Facturapi con el API key del backend
-     * y devuelve el binario directo al cliente. Esto evita exponer
-     * URLs firmadas o el key al frontend.
+     * Devuelve una URL firmada temporal (5 min) que el cliente puede
+     * abrir directamente en un browser/WebBrowser sin necesidad de
+     * mandar el Bearer token.
      */
-    public function download(Request $request, Invoice $invoice, string $kind)
+    public function signDownloadUrl(Request $request, Invoice $invoice): \Illuminate\Http\JsonResponse
     {
         $this->authorizeOwnership($request, $invoice);
+        if ($invoice->estado !== 'generated') {
+            abort(422, 'La factura aún no está disponible para descargar.');
+        }
+        $kind = $request->query('kind', 'pdf');
+        if (! in_array($kind, ['pdf', 'xml'], true)) abort(422, 'kind inválido.');
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'invoices.download',
+            now()->addMinutes(5),
+            ['invoice' => $invoice->id, 'kind' => $kind],
+        );
+        return response()->json(['url' => $url, 'expires_in' => 300]);
+    }
+
+    /**
+     * Proxy de descarga firmado. Esta ruta es PÚBLICA pero requiere
+     * firma válida — no usa Sanctum porque el browser no manda Bearer.
+     */
+    public function downloadSigned(Request $request, Invoice $invoice, string $kind)
+    {
+        // signed middleware ya validó la firma; aquí solo servimos el binario.
         if ($invoice->estado !== 'generated' || ! $invoice->facturapi_invoice_id) {
             abort(404);
         }
@@ -166,9 +240,10 @@ class InvoiceController extends Controller
         $mime = $kind === 'pdf' ? 'application/pdf' : 'application/xml';
         $name = ($invoice->folio_fiscal_uuid ?? $invoice->id) . '.' . $kind;
 
+        // inline para que el WebBrowser lo muestre en vez de descargarlo
         return response($bin, 200, [
             'Content-Type' => $mime,
-            'Content-Disposition' => 'attachment; filename="' . $name . '"',
+            'Content-Disposition' => 'inline; filename="' . $name . '"',
         ]);
     }
 
