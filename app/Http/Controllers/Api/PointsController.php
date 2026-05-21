@@ -65,6 +65,13 @@ class PointsController extends Controller
 
         $this->points->notifyRedemption($redemption);
 
+        // Disparar invitación a CSAT post-canje (si hay surveys activos).
+        // El canje recién se "usa" al ser marcado por admin, no aquí. Pero
+        // mandamos la encuesta ahora para que llegue mientras el usuario aún
+        // tiene el contexto vivo. Cambia el approach si quieres esperar al
+        // markUsed.
+        app(\App\Services\SurveyService::class)->inviteAfterRedemption($redemption);
+
         return response()->json([
             'redemption' => $redemption,
             'balance' => $this->points->getBalance($request->user()->id),

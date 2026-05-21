@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             StationsSeeder::class,
             RewardsSeeder::class,
             RewardInventorySeeder::class,
+            SurveysSeeder::class,
         ]);
     }
 }

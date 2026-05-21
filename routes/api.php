@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\RewardInventoryController;
 use App\Http\Controllers\Api\SimulatorScenarioController;
 use App\Http\Controllers\Api\StationController;
+use App\Http\Controllers\Api\SurveyController;
 use App\Http\Controllers\Api\TaxProfileController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\UserController;
@@ -68,6 +69,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me/tax-profiles/{taxProfile}',    [TaxProfileController::class, 'show']);
     Route::put('/me/tax-profiles/{taxProfile}',    [TaxProfileController::class, 'update']);
     Route::delete('/me/tax-profiles/{taxProfile}', [TaxProfileController::class, 'destroy']);
+
+    // Encuestas de satisfacción
+    Route::get('/me/surveys/pending',                       [SurveyController::class, 'myPending']);
+    Route::get('/me/surveys/{invitation}',                  [SurveyController::class, 'myShow']);
+    Route::post('/me/surveys/{invitation}/respond',         [SurveyController::class, 'respond']);
 
     // Facturas
     Route::get('/me/invoices',                    [InvoiceController::class, 'index']);
@@ -130,6 +136,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Dashboard admin (métricas agregadas)
         Route::get('/admin/dashboard', [DashboardController::class, 'index']);
+
+        // Encuestas — admin CRUD + métricas
+        Route::get('/admin/surveys',                              [SurveyController::class, 'adminIndex']);
+        Route::post('/admin/surveys',                             [SurveyController::class, 'store']);
+        Route::get('/admin/surveys/{survey}',                     [SurveyController::class, 'adminShow']);
+        Route::put('/admin/surveys/{survey}',                     [SurveyController::class, 'update']);
+        Route::delete('/admin/surveys/{survey}',                  [SurveyController::class, 'destroy']);
+        Route::post('/admin/surveys/{survey}/toggle',             [SurveyController::class, 'toggle']);
+        Route::get('/admin/surveys/{survey}/responses',           [SurveyController::class, 'responses']);
+        Route::get('/admin/surveys/{survey}/stats',               [SurveyController::class, 'stats']);
+        Route::get('/admin/surveys/{survey}/station-ranking',     [SurveyController::class, 'stationRanking']);
 
         // Avisos push masivos
         Route::get('/admin/broadcasts',                 [BroadcastController::class, 'index']);

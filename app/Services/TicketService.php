@@ -16,6 +16,7 @@ class TicketService
         private PointsService $points,
         private TickerCalculator $calculator,
         private NotificationService $notifications,
+        private SurveyService $surveys,
     ) {
     }
 
@@ -97,6 +98,9 @@ class TicketService
                 'payload' => ['ticket_id' => $fresh->id, 'puntos' => $fresh->puntos_acreditados],
             ],
         );
+
+        // Disparar invitación a CSAT post-ticket (si hay surveys activos)
+        $this->surveys->inviteAfterTicket($fresh);
 
         // Si el tier subió, notificar
         $tierAfter = $this->points->getProfileStats($ticket->user_id)['tier'];
