@@ -36,6 +36,14 @@ admin.fullok.mx {
     }
     header @assets Cache-Control "public, max-age=31536000, immutable"
 
+    # index.html y rutas SPA: NUNCA cachear, el index referencia los hashes
+    # nuevos de cada build. Si el browser cachea, sigue viendo la versión
+    # vieja aunque el dist haya cambiado.
+    @html {
+        not path /assets/*
+    }
+    header @html Cache-Control "no-cache, no-store, must-revalidate"
+
     try_files {path} /index.html
     file_server
 
