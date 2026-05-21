@@ -47,9 +47,12 @@ class AuthController extends Controller
 
         Cache::forget($key);
 
-        // Un usuario, un token activo
-        $user->tokens()->delete();
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Soportamos múltiples sesiones por usuario (admin web + app móvil + ...).
+        // El nombre del token permite identificar el origen y borrar el más viejo
+        // del mismo origen para evitar acumulación infinita.
+        $tokenName = $request->input('device_name', 'auth-token');
+        $user->tokens()->where('name', $tokenName)->delete();
+        $token = $user->createToken($tokenName)->plainTextToken;
 
         return response()->json([
             'user'  => $user,
