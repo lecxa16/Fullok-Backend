@@ -82,6 +82,17 @@ class ProgramSettingsSeeder extends Seeder
                 'sort_order' => 60,
             ],
 
+            // ── Tickets ────────────────────────────────────────────────────
+            [
+                'key' => 'tickets_allow_duplicate_folios',
+                'value' => 'false',
+                'type' => 'boolean',
+                'group' => 'tickets',
+                'label' => 'Permitir folios de ticket duplicados',
+                'description' => 'Por default rechazamos un folio si ya fue registrado en la misma estación y fecha. Activa para pruebas (reescanear el mismo ticket) o si tu operación lo necesita.',
+                'sort_order' => 70,
+            ],
+
             [
                 'key' => 'expiration_months',
                 'value' => '12',
