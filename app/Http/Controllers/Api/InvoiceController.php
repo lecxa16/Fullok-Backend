@@ -55,8 +55,13 @@ class InvoiceController extends Controller
         if ($ticket->estado !== 'aprobado') {
             return response()->json(['message' => 'Solo se pueden facturar tickets aprobados.'], 422);
         }
-        if (Invoice::where('ticket_id', $ticket->id)->exists()) {
-            return response()->json(['message' => 'Este ticket ya tiene una factura asociada.'], 422);
+
+        // Si existe una factura activa (no en error/cancelled), bloquear.
+        // Si existe una en error, la "reactivamos" en lugar de crear otra
+        // — la tabla tiene unique(ticket_id) por integridad.
+        $existing = Invoice::where('ticket_id', $ticket->id)->first();
+        if ($existing && ! in_array($existing->estado, ['error', 'cancelled'], true)) {
+            return response()->json(['message' => 'Este ticket ya tiene una factura activa.'], 422);
         }
 
         // Ventana SAT: misma mes calendario. Se puede desactivar via setting
@@ -74,15 +79,30 @@ class InvoiceController extends Controller
         $profile = TaxProfile::findOrFail($data['tax_profile_id']);
         if ($profile->user_id !== $request->user()->id) abort(404);
 
-        $invoice = Invoice::create([
-            'user_id' => $request->user()->id,
-            'ticket_id' => $ticket->id,
-            'tax_profile_id' => $profile->id,
-            'estado' => 'requested',
-            'monto_total' => $ticket->monto,
-            'uso_cfdi' => $data['uso_cfdi'] ?? $profile->uso_cfdi_default,
-            'payment_form' => $data['payment_form'] ?? '99',
-        ]);
+        if ($existing) {
+            // Reactivar una invoice que estaba en error/cancelled
+            $existing->update([
+                'tax_profile_id' => $profile->id,
+                'estado' => 'requested',
+                'uso_cfdi' => $data['uso_cfdi'] ?? $profile->uso_cfdi_default,
+                'payment_form' => $data['payment_form'] ?? '99',
+                'error_message' => null,
+                'pac_response' => null,
+                'cancelada_at' => null,
+                'motivo_cancelacion' => null,
+            ]);
+            $invoice = $existing->fresh();
+        } else {
+            $invoice = Invoice::create([
+                'user_id' => $request->user()->id,
+                'ticket_id' => $ticket->id,
+                'tax_profile_id' => $profile->id,
+                'estado' => 'requested',
+                'monto_total' => $ticket->monto,
+                'uso_cfdi' => $data['uso_cfdi'] ?? $profile->uso_cfdi_default,
+                'payment_form' => $data['payment_form'] ?? '99',
+            ]);
+        }
 
         try {
             $invoice = $this->facturapi->issueInvoiceForTicket($invoice, $ticket, $profile);

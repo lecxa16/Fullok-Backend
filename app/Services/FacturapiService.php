@@ -24,12 +24,26 @@ class FacturapiService
 {
     private const BASE_URL = 'https://www.facturapi.io/v2';
 
-    // SAT product keys para combustibles (CFDI 4.0)
+    // SAT ClaveProdServ por combustible. DEBE ser igual a ClaveHYP del
+    // complemento de hidrocarburos.
+    //   15101505 → gasolinas (Magna y Premium)
+    //   15101514 → diésel
+    //   15101515 → turbosina
     private const PRODUCT_KEYS = [
-        'magna' => '15101515',
-        'premium' => '15101514',
-        'diesel' => '15101505',
+        'magna' => '15101505',
+        'premium' => '15101505',
+        'diesel' => '15101514',
     ];
+
+    // SubProductoHYP del complemento por combustible (catálogo SAT)
+    private const SUB_PRODUCTO_HYP = [
+        'magna' => 'SP18',
+        'premium' => 'SP19',
+        'diesel' => 'SP16',
+    ];
+
+    private const HYP_NAMESPACE_URI = 'http://www.sat.gob.mx/hidrocarburospetroliferos';
+    private const HYP_SCHEMA_LOCATION = 'http://www.sat.gob.mx/sitio_internet/cfd/hidrocarburospetroliferos.xsd';
 
     private const UNIT_KEY_LITER = 'LTR';
     private const TAX_RATE_IVA = 0.16;
@@ -105,31 +119,70 @@ class FacturapiService
             $profile = $this->syncCustomer($profile);
         }
 
-        $productKey = self::PRODUCT_KEYS[$ticket->tipo_combustible] ?? '15101500';
         $invoice->update(['estado' => 'processing']);
+
+        $fuel = $ticket->tipo_combustible;
+        $productKey = self::PRODUCT_KEYS[$fuel] ?? '15101505';
+
+        // Datos del permiso CRE del emisor — el SAT lo exige en el complemento
+        // y como NoIdentificacion del concepto. Sin esto, el CFDI se rechaza.
+        $numeroPermiso = (string) config('services.facturapi.cre_numero_permiso');
+        $tipoPermiso   = (string) config('services.facturapi.cre_tipo_permiso', 'PER03');
+        if (! $numeroPermiso) {
+            $msg = 'Falta configurar el número de permiso CRE (FACTURAPI_CRE_NUMERO_PERMISO en .env).';
+            $invoice->update(['estado' => 'error', 'error_message' => $msg]);
+            throw new RuntimeException($msg);
+        }
+
+        $litros = max((float) $ticket->litros, 0.01);
+        $cuotaIeps = $this->iepsCuotaForFuel($fuel);
+
+        // Cálculo correcto IEPS Cuota + IVA, según docs Facturapi y la guía:
+        //   precio_pvp        = monto_total / litros (con IVA + IEPS adentro)
+        //   precio_sin_ieps   = precio_pvp - cuota_ieps
+        //   precio_base       = precio_sin_ieps / (1 + IVA)
+        //   valor_unitario    = precio_base + cuota_ieps   (incluye IEPS, sin IVA)
+        $precioPvp     = (float) $ticket->monto / $litros;
+        $precioSinIeps = $precioPvp - $cuotaIeps;
+        $precioBase    = $precioSinIeps / (1 + self::TAX_RATE_IVA);
+        $valorUnitario = round($precioBase + $cuotaIeps, 6);
 
         $payload = [
             'customer' => $profile->facturapi_customer_id,
             'items' => [[
-                'quantity' => (float) $ticket->litros,
+                'quantity' => $litros,
                 'product' => [
-                    'description' => "Carga de " . ucfirst($ticket->tipo_combustible)
-                        . " — folio {$ticket->folio}",
+                    'description' => "Carga de " . ucfirst($fuel) . " — folio {$ticket->folio}",
                     'product_key' => $productKey,
                     'unit_key' => self::UNIT_KEY_LITER,
-                    // Facturapi calcula precio unitario = total / quantity, así que
-                    // pasamos el monto total como price total con tax_included = true
-                    'price' => (float) $ticket->monto / max($ticket->litros, 0.01),
-                    'tax_included' => true,
-                    'taxes' => [[
-                        'type' => 'IVA',
-                        'rate' => self::TAX_RATE_IVA,
-                    ]],
+                    'price' => $valorUnitario,
+                    'tax_included' => false, // IVA se calcula sobre (valor - IEPS)
+                    'sku' => $numeroPermiso, // Va al NoIdentificacion del concepto
+                    'taxes' => [
+                        ['type' => 'IVA', 'rate' => self::TAX_RATE_IVA, 'factor' => 'Tasa'],
+                        [
+                            'type' => 'IEPS',
+                            'rate' => $cuotaIeps,
+                            'factor' => 'Cuota',
+                            'withholding' => false,
+                            'ieps_mode' => 'subtract_before_break_down',
+                        ],
+                    ],
                 ],
+                // Complemento HidroYPetro — string XML inline. El namespace va
+                // declarado dentro del elemento Y a nivel documento (abajo).
+                'complement' => $this->buildHidrocarburosComplementXml(
+                    $tipoPermiso, $numeroPermiso, $productKey, self::SUB_PRODUCTO_HYP[$fuel] ?? 'SP18',
+                ),
             ]],
             'use' => $invoice->uso_cfdi,
             'payment_form' => $invoice->payment_form,
             'payment_method' => 'PUE', // pago en una exhibición
+            'namespaces' => [[
+                'prefix' => 'hidrocarburospetroliferos',
+                'uri' => self::HYP_NAMESPACE_URI,
+                'schema_location' => self::HYP_SCHEMA_LOCATION,
+            ]],
         ];
 
         $res = $this->http()->post(self::BASE_URL . '/invoices', $payload);
@@ -202,6 +255,37 @@ class FacturapiService
             throw new RuntimeException('No se pudo descargar el XML.');
         }
         return $res->body();
+    }
+
+    /**
+     * Construye el XML inline del complemento HidroYPetro. El namespace va
+     * declarado en el mismo elemento (Facturapi requiere esto incluso si
+     * también está en `namespaces[]`).
+     */
+    private function buildHidrocarburosComplementXml(
+        string $tipoPermiso,
+        string $numeroPermiso,
+        string $claveHyp,
+        string $subProductoHyp,
+    ): string {
+        return sprintf(
+            '<hidrocarburospetroliferos:HidroYPetro xmlns:hidrocarburospetroliferos="%s" Version="1.0" TipoPermiso="%s" NumeroPermiso="%s" ClaveHYP="%s" SubProductoHYP="%s"/>',
+            self::HYP_NAMESPACE_URI,
+            $tipoPermiso,
+            htmlspecialchars($numeroPermiso, ENT_QUOTES | ENT_XML1),
+            $claveHyp,
+            $subProductoHyp,
+        );
+    }
+
+    private function iepsCuotaForFuel(string $fuel): float
+    {
+        return match ($fuel) {
+            'magna' => (float) config('services.facturapi.ieps_cuota_magna', 0),
+            'premium' => (float) config('services.facturapi.ieps_cuota_premium', 0),
+            'diesel' => (float) config('services.facturapi.ieps_cuota_diesel', 0),
+            default => 0.0,
+        };
     }
 
     private function http()
