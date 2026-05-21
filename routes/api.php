@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PointsController;
 use App\Http\Controllers\Api\ProgramSettingsController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\RewardInventoryController;
 use App\Http\Controllers\Api\SimulatorScenarioController;
 use App\Http\Controllers\Api\StationController;
+use App\Http\Controllers\Api\TaxProfileController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +59,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // Push tokens (registro desde la app)
     Route::post('/me/push-tokens',           [PushTokenController::class, 'register']);
     Route::delete('/me/push-tokens/{token}', [PushTokenController::class, 'destroy']);
+
+    // Perfiles fiscales (datos para emitir CFDI)
+    Route::get('/me/tax-profiles',                 [TaxProfileController::class, 'index']);
+    Route::post('/me/tax-profiles',                [TaxProfileController::class, 'store']);
+    Route::get('/me/tax-profiles/{taxProfile}',    [TaxProfileController::class, 'show']);
+    Route::put('/me/tax-profiles/{taxProfile}',    [TaxProfileController::class, 'update']);
+    Route::delete('/me/tax-profiles/{taxProfile}', [TaxProfileController::class, 'destroy']);
+
+    // Facturas
+    Route::get('/me/invoices',                    [InvoiceController::class, 'index']);
+    Route::post('/me/invoices',                   [InvoiceController::class, 'request']);
+    Route::get('/me/invoices/{invoice}',          [InvoiceController::class, 'show']);
+    Route::post('/me/invoices/{invoice}/cancel',  [InvoiceController::class, 'cancel']);
+    Route::get('/me/invoices/{invoice}/{kind}',   [InvoiceController::class, 'download'])
+        ->where('kind', 'pdf|xml');
 
     // Mis tickets de carga
     Route::post('/me/tickets/extract', [TicketController::class, 'extract']);
