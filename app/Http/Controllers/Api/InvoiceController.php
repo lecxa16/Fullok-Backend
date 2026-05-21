@@ -59,9 +59,13 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Este ticket ya tiene una factura asociada.'], 422);
         }
 
-        // Ventana SAT: misma mes calendario. Validación blanda con margen al
-        // último día del mes en que se emitió la carga.
-        if (! $this->dentroDeVentanaSat($ticket->fecha_ticket)) {
+        // Ventana SAT: misma mes calendario. Se puede desactivar via setting
+        // global `invoicing_strict_window` para hacer pruebas con tickets viejos.
+        $strict = filter_var(
+            \App\Models\ProgramSetting::getValue('invoicing_strict_window', 'true'),
+            FILTER_VALIDATE_BOOLEAN,
+        );
+        if ($strict && ! $this->dentroDeVentanaSat($ticket->fecha_ticket)) {
             return response()->json([
                 'message' => 'Este ticket está fuera de la ventana de facturación del mes correspondiente.',
             ], 422);

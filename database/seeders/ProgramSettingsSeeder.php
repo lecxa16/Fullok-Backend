@@ -71,6 +71,17 @@ class ProgramSettingsSeeder extends Seeder
             ],
 
             // ── Expiración ─────────────────────────────────────────────────
+            // ── Facturación ────────────────────────────────────────────────
+            [
+                'key' => 'invoicing_strict_window',
+                'value' => 'true',
+                'type' => 'boolean',
+                'group' => 'invoicing',
+                'label' => 'Validar ventana SAT al facturar',
+                'description' => 'Si está activo, solo se pueden facturar tickets del mes en curso o el siguiente. Desactiva para pruebas con tickets viejos.',
+                'sort_order' => 60,
+            ],
+
             [
                 'key' => 'expiration_months',
                 'value' => '12',
