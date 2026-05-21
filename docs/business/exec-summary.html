@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Fullok Wallet — Resumen ejecutivo</title>
+<style>
+  @page { size: letter; margin: 14mm; }
+  :root {
+    --brand: #E31E24;
+    --brand-dark: #8B0E12;
+    --brand-soft: #FEE2E4;
+    --foreground: #1A0A0A;
+    --muted: #6B6660;
+    --bg: #FAFAF7;
+    --card: #FFFFFF;
+    --border: #ECEAE5;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --info: #3B82F6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    color: var(--foreground);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-size: 11px;
+  }
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card);
+    padding: 28px 36px;
+  }
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--foreground);
+    margin-bottom: 22px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mark {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 20px;
+  }
+  .brand h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .brand p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .meta {
+    text-align: right;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .meta strong { color: var(--foreground); font-size: 11px; }
+
+  /* Hero metric */
+  .hero {
+    background: linear-gradient(135deg, #1A0A0A 0%, #2C0000 100%);
+    color: white;
+    padding: 18px 22px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .hero-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+  .hero-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: white;
+  }
+  .hero-value .small { font-size: 14px; color: rgba(255,255,255,0.65); font-weight: 500; }
+  .hero-side {
+    text-align: right;
+  }
+  .hero-side .num {
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+  }
+  .hero-side .sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* Sections */
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 18px 0 8px;
+    color: var(--foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 11px;
+    background: var(--brand);
+    margin-right: 7px;
+    vertical-align: -1px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+
+  /* Cost cards */
+  .cost-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--bg);
+  }
+  .cost-card .label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .cost-card .value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--foreground);
+    font-feature-settings: "tnum";
+  }
+  .cost-card .sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .cost-card.brand {
+    background: var(--brand-soft);
+    border-color: rgba(227, 30, 36, 0.15);
+  }
+  .cost-card.brand .value { color: var(--brand-dark); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    margin-bottom: 10px;
+  }
+  th {
+    text-align: left;
+    background: var(--bg);
+    padding: 5px 8px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  th.num, td.num {
+    text-align: right;
+    font-feature-settings: "tnum";
+  }
+  td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.total td {
+    font-weight: 700;
+    border-top: 2px solid var(--foreground);
+    color: var(--foreground);
+    background: var(--bg);
+  }
+
+  /* Mini pricing chips */
+  .pricing-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .price-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 12px;
+  }
+  .price-card.featured {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+  }
+  .price-card .ptag {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--brand-dark);
+    margin-bottom: 4px;
+  }
+  .price-card .pval {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .price-card .pval .unit { font-size: 10px; color: var(--muted); font-weight: 500; }
+  .price-card .pdesc {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Bottom highlights */
+  .highlights {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .hl {
+    border-left: 3px solid var(--brand);
+    padding: 4px 0 4px 10px;
+  }
+  .hl .hl-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--brand);
+    font-feature-settings: "tnum";
+  }
+  .hl .hl-desc {
+    font-size: 10px;
+    color: var(--foreground);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 22px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 9px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+  footer a { color: var(--muted); }
+
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; padding: 0; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="mark">F</div>
+      <div>
+        <h1>Fullok Wallet</h1>
+        <p>Resumen ejecutivo · Unit economics</p>
+      </div>
+    </div>
+    <div class="meta">
+      <div><strong>Versión 1.0</strong></div>
+      <div>21 mayo 2026</div>
+      <div>fullok.mx</div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div>
+      <div class="hero-label">Costo operativo</div>
+      <div class="hero-value">$4.86 <span class="small">MXN / usuario activo / mes</span></div>
+    </div>
+    <div class="hero-side">
+      <div class="num">$14,583 MXN</div>
+      <div class="sub">a 3,000 usuarios activos/mes</div>
+    </div>
+  </div>
+
+  <!-- Costos -->
+  <h2>Costos operativos mensuales (base 3,000 usuarios)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Concepto</th>
+        <th>Cantidad</th>
+        <th class="num">Costo MXN/mes</th>
+        <th class="num">Por usuario</th>
+        <th class="num">% del total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Recompensas canjeadas (breakage 70%)</td>
+        <td>119,700 pts canjeados</td>
+        <td class="num">$10,773</td>
+        <td class="num">$3.59</td>
+        <td class="num">74%</td>
+      </tr>
+      <tr>
+        <td>Facturación CFDI (Facturapi @ $0.55/timbre)</td>
+        <td>3,600 timbres</td>
+        <td class="num">$1,980</td>
+        <td class="num">$0.66</td>
+        <td class="num">14%</td>
+      </tr>
+      <tr>
+        <td>Infraestructura (DO + Apple + dominios + storage)</td>
+        <td>Fijo</td>
+        <td class="num">$1,110</td>
+        <td class="num">$0.37</td>
+        <td class="num">8%</td>
+      </tr>
+      <tr>
+        <td>IA Claude Haiku 4.5 (lectura de tickets)</td>
+        <td>12,000 tickets</td>
+        <td class="num">$720</td>
+        <td class="num">$0.24</td>
+        <td class="num">5%</td>
+      </tr>
+      <tr>
+        <td>Push notifications (Expo + APNs + FCM)</td>
+        <td>—</td>
+        <td class="num">$0</td>
+        <td class="num">$0.00</td>
+        <td class="num">0%</td>
+      </tr>
+      <tr class="total">
+        <td>Total operativo</td>
+        <td></td>
+        <td class="num">$14,583</td>
+        <td class="num">$4.86</td>
+        <td class="num">100%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Catálogo de recompensas -->
+  <h2>Catálogo de recompensas — costo al mayoreo (Monterrey, NL)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th class="num">Costo unitario</th>
+        <th class="num">Puntos requeridos</th>
+        <th class="num">$/punto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Llavero metálico grabado láser</td><td class="num">$28</td><td class="num">400</td><td class="num">$0.070</td></tr>
+      <tr><td>Banderín bordado coleccionable</td><td class="num">$120</td><td class="num">600</td><td class="num">$0.200</td></tr>
+      <tr><td>Gorra trucker bordada</td><td class="num">$60</td><td class="num">1,200</td><td class="num">$0.050</td></tr>
+      <tr><td>Termo acero inoxidable 600ml</td><td class="num">$180</td><td class="num">2,000</td><td class="num">$0.090</td></tr>
+      <tr><td>Playera oficial bordada</td><td class="num">$120</td><td class="num">2,500</td><td class="num">$0.048</td></tr>
+      <tr><td>Balón fútbol réplica oficial</td><td class="num">$130</td><td class="num">3,500</td><td class="num">$0.037</td></tr>
+      <tr class="total"><td>Costo blended ponderado</td><td class="num">$106</td><td class="num">—</td><td class="num">$0.082</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size: 10px; color: var(--muted); margin-top: -4px;">
+    Aplicando breakage del 70% (puntos otorgados pero nunca canjeados):
+    <strong style="color: var(--foreground)">costo real por punto emitido = $0.025 MXN</strong>.
+    Es decir, por cada $20 MXN de carga (1 punto), gastamos 2.5 centavos en recompensa.
+  </p>
+
+  <!-- Pricing al cliente -->
+  <h2>3 modelos de pricing al operador (cadena de gasolineras)</h2>
+  <div class="pricing-row">
+    <div class="price-card featured">
+      <div class="ptag">★ Recomendado</div>
+      <div class="pval">$15<span class="unit"> /usuario activo/mes</span></div>
+      <div class="pdesc">Margen 67%. Punto de equilibrio: 1,500 usuarios.</div>
+    </div>
+    <div class="price-card">
+      <div class="ptag">Por ticket</div>
+      <div class="pval">$2.50<span class="unit"> /ticket aprobado</span></div>
+      <div class="pdesc">Margen 52%. Mejor para flujos irregulares.</div>
+    </div>
+    <div class="price-card">
+      <div class="ptag">Mensualidad fija</div>
+      <div class="pval">$3,500<span class="unit"> /mes/estación</span></div>
+      <div class="pdesc">Incluye 1,000 usuarios. +$5 c/u extra.</div>
+    </div>
+  </div>
+
+  <!-- Highlights -->
+  <h2>Highlights</h2>
+  <div class="highlights">
+    <div class="hl">
+      <div class="hl-num">11×</div>
+      <div class="hl-desc">ROI de la IA<br/><span style="color: var(--muted)">$720 gastados → $8,000 ahorrados en mano de obra</span></div>
+    </div>
+    <div class="hl">
+      <div class="hl-num">$0.025</div>
+      <div class="hl-desc">Costo por punto emitido<br/><span style="color: var(--muted)">Incluye 70% de breakage estándar industria</span></div>
+    </div>
+    <div class="hl">
+      <div class="hl-num">$3.95</div>
+      <div class="hl-desc">Costo / usuario a 100K usuarios<br/><span style="color: var(--muted)">Economía de escala real al crecer</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2026 Fullok S.A. de C.V.</span>
+    <span>Documento confidencial · Solo para uso de prospectos y socios estratégicos</span>
+  </footer>
+
+</div>
+
+</body>
+</html>

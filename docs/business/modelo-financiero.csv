@@ -1,0 +1,90 @@
+SECCIÓN,Variable / Concepto,Valor / Fórmula,Notas
+
+INPUTS - PARÁMETROS BASE,,,
+INPUT,Usuarios activos por mes,3000,Cambia este número para simular escalado
+INPUT,Frecuencia carga por usuario por mes,4,Promedio mercado mexicano clientes recurrentes
+INPUT,Ticket promedio por carga (MXN),700,Sectorial 2025-2026
+INPUT,Tasa aprobación de tickets,0.95,5% se rechaza por foto ilegible o duplicado
+INPUT,Earning rate (pesos por 1 punto),20,Configurable desde admin
+INPUT,% usuarios que solicitan factura,0.30,Asumido por operador
+INPUT,Tasa de canje de puntos (1 - breakage),0.30,Industry standard: 60-80% breakage
+INPUT,Tipo de cambio USD a MXN,18.50,Ajustar según FX vigente
+
+INPUTS - COSTOS UNITARIOS,,,
+INPUT,Costo Facturapi por timbre (MXN),0.55,"Rango real: 0.50 a 0.60"
+INPUT,Costo Claude Haiku por ticket leído (USD),0.0030,"Imagen + prompt + JSON output"
+INPUT,Costo blended por punto canjeado (MXN),0.082,Promedio ponderado catálogo de 6 SKUs
+
+INPUTS - INFRAESTRUCTURA FIJA (MXN/mes),,,
+INPUT,DigitalOcean droplet + backups,640,"4GB / 2vCPU adecuado hasta ~10K usuarios"
+INPUT,Apple Developer (amortizado),153,$99 USD/año
+INPUT,Google Play (amortizado),4,$25 USD único / 60 meses
+INPUT,Dominio fullok.mx,25,$300/año
+INPUT,Storage de fotos de tickets (DO Spaces),185,$10 USD/mes hasta 250GB
+INPUT,Email transaccional,94,$5 USD/mes plan starter
+INPUT,Monitoreo / logs,0,Cuando salga a producción masiva: ~$26 USD/mes Sentry
+
+INPUTS - CATÁLOGO RECOMPENSAS (MXN al mayoreo MTY),,,
+INPUT,Costo Llavero metálico,28,Grabado láser incluido
+INPUT,Costo Banderín bordado,120,Bordado real coleccionable
+INPUT,Costo Gorra trucker,60,Bordado pecho frontal
+INPUT,Costo Termo 600ml,180,Acero doble pared + grabado láser
+INPUT,Costo Playera bordada,120,Algodón peinado + bordado
+INPUT,Costo Balón réplica,130,Talla 5 réplica oficial
+
+INPUTS - PUNTOS POR RECOMPENSA,,,
+INPUT,Puntos Llavero,400,
+INPUT,Puntos Banderín,600,
+INPUT,Puntos Gorra,1200,
+INPUT,Puntos Termo,2000,
+INPUT,Puntos Playera,2500,
+INPUT,Puntos Balón,3500,
+
+CÁLCULOS DERIVADOS,,,
+CALCULADO,Cargas totales por mes,=Usuarios * Frecuencia = 12000,
+CALCULADO,Tickets aprobados por mes,=Cargas * Aprobación = 11400,
+CALCULADO,Puntos emitidos por mes,=Aprobados * (Ticket/EarningRate) = 11400 * 35 = 399000,
+CALCULADO,Puntos canjeados por mes,=Emitidos * TasaCanje = 119700,
+CALCULADO,Facturas emitidas por mes,=Cargas * %Facturan = 3600,
+
+CÁLCULOS COSTO POR PRODUCTO (MXN por punto),,,
+CALCULADO,Llavero $/pt,=28/400 = 0.0700,
+CALCULADO,Banderín $/pt,=120/600 = 0.2000,
+CALCULADO,Gorra $/pt,=60/1200 = 0.0500,
+CALCULADO,Termo $/pt,=180/2000 = 0.0900,
+CALCULADO,Playera $/pt,=120/2500 = 0.0480,
+CALCULADO,Balón $/pt,=130/3500 = 0.0371,
+CALCULADO,Promedio simple,=PROMEDIO(arriba) = 0.0825,
+CALCULADO,Costo real por punto emitido (con breakage),=BlendedCost * TasaCanje = 0.082 * 0.30 = 0.0246,
+
+COSTOS MENSUALES (MXN),,,
+RESULTADO,Costo recompensas,=PtsCanjeados * BlendedCost = 119700 * 0.082 = 9815,Con breakage real efectivo
+RESULTADO,Costo Facturapi,=Facturas * 0.55 = 3600 * 0.55 = 1980,
+RESULTADO,Costo Claude IA,=Tickets * (0.0030 * FX) = 12000 * 0.0555 = 666,Conservador +10% buffer = 720
+RESULTADO,Costo infraestructura,=SUMA(infra) = 640+153+4+25+185+94 = 1101,Aprox 1110 redondeado
+RESULTADO,Costo total operativo,=Recompensas+Facturapi+IA+Infra = 13606,Cifra base ~13.6K MXN/mes
+RESULTADO,Costo por usuario activo,=Total/Usuarios = 13606/3000 = 4.54,Redondeado a 4.86 con buffer
+
+PRICING SUGERIDO AL CLIENTE,,,
+PRICING,Opción A - por usuario activo,$15 MXN/usuario/mes,Margen 67% sobre costo
+PRICING,Opción B - por ticket procesado,$2.50 MXN/ticket aprobado,Margen 52%
+PRICING,Opción C - mensualidad fija,$3500 MXN/mes/estación,Incluye hasta 1000 usuarios, $5 extra c/u sobrepaso
+
+INGRESO MENSUAL ESTIMADO (Modelo A),,,
+PROYECCIÓN,Ingreso bruto,=Usuarios * PrecioUsuario = 3000 * 15 = 45000,
+PROYECCIÓN,Costo total operativo,13606,
+PROYECCIÓN,Margen bruto MXN,=Ingreso - Costo = 31394,
+PROYECCIÓN,Margen bruto %,=Margen/Ingreso = 0.6976,~70%
+
+PROYECCIÓN DE ESCALADO (Modelo A pricing),,,
+ESCALADO,1000 usuarios,Ingreso $15000 / Costo $5750 / Margen $9250 / Margen% 62%,Infra fija pesa más
+ESCALADO,3000 usuarios (base),Ingreso $45000 / Costo $14583 / Margen $30417 / Margen% 68%,
+ESCALADO,10000 usuarios,Ingreso $150000 / Costo $43500 / Margen $106500 / Margen% 71%,
+ESCALADO,30000 usuarios,Ingreso $450000 / Costo $123200 / Margen $326800 / Margen% 73%,
+ESCALADO,100000 usuarios,Ingreso $1500000 / Costo $395000 / Margen $1105000 / Margen% 74%,Economía de escala plena
+
+NOTAS DE USO,,,
+NOTA,Cómo usar este modelo,"Abre en Excel/Google Sheets. Modifica las celdas marcadas como INPUT. Los CALCULADOS y RESULTADOS se actualizan en cadena si reemplazas las fórmulas hardcoded por referencias reales a celdas.",
+NOTA,Para sensibilizar,"Cambia 'Tasa de canje' (breakage). Subirlo de 30% a 50% mete +60% en el costo de recompensas. Bajarlo a 20% baja 33%.",
+NOTA,Volumen de facturas,"Si % facturación sube a 50% (común en B2B), el costo Facturapi pasa de 1980 a 3300 (+$1320/mes).",
+NOTA,Cambio de modelo IA,"Si subes a Sonnet 4.7 (más preciso): costo IA pasa de $720 a ~$2400. Solo vale la pena si la tasa de error de extracción de Haiku supera el 5%.",
