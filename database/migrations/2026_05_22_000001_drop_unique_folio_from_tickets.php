@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        // MySQL usaba el unique compuesto como índice de respaldo de la FK
+        // station_id. Antes de dropearlo, creamos un índice simple sobre
+        // station_id para que la FK siga teniendo soporte (error 1553).
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->index('station_id', 'tickets_station_id_index');
+        });
         Schema::table('tickets', function (Blueprint $table) {
             $table->dropUnique(['station_id', 'folio', 'fecha_ticket']);
         });
@@ -22,6 +28,9 @@ return new class extends Migration {
     {
         Schema::table('tickets', function (Blueprint $table) {
             $table->unique(['station_id', 'folio', 'fecha_ticket']);
+        });
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->dropIndex('tickets_station_id_index');
         });
     }
 };
