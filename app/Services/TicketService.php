@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Promotion;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +49,11 @@ class TicketService
         $tierBefore = $this->points->getProfileStats($ticket->user_id)['tier'];
 
         $fresh = DB::transaction(function () use ($ticket, $adminId) {
-            $calc = $this->calculator->pointsForAmount($ticket->user_id, $ticket->monto);
+            $calc = $this->calculator->pointsForAmount(
+                $ticket->user_id,
+                $ticket->monto,
+                $ticket->tipo_combustible,
+            );
 
             $this->points->award(
                 $ticket->user_id,
@@ -61,6 +66,11 @@ class TicketService
                     'created_by' => $adminId,
                 ],
             );
+
+            // Si la promo aplicada generó puntos extra vs tier puro, registrar el consumo.
+            if (($calc['multiplier_source'] ?? null) === 'promo' && ! empty($calc['promo_id'])) {
+                Promotion::where('id', $calc['promo_id'])->increment('points_issued', $calc['puntos']);
+            }
 
             $ticket->update([
                 'estado' => 'aprobado',

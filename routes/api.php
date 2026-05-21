@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PointsController;
 use App\Http\Controllers\Api\ProgramSettingsController;
+use App\Http\Controllers\Api\PromotionController;
 use App\Http\Controllers\Api\PushTokenController;
 use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\RewardInventoryController;
@@ -34,6 +35,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rewards',                       [RewardController::class, 'index']);
     Route::get('/rewards/{reward}',              [RewardController::class, 'show']);
     Route::get('/rewards/{reward}/availability', [RewardInventoryController::class, 'availability']);
+
+    // Promociones (catálogo) — visible para todos los autenticados
+    Route::get('/promotions',              [PromotionController::class, 'index']);
+    Route::get('/promotions/{promotion}',  [PromotionController::class, 'show']);
 
     // Mi balance, transacciones, canjes
     Route::get('/me/points/balance',      [PointsController::class, 'myBalance']);
@@ -103,6 +108,13 @@ Route::middleware('auth:sanctum')->group(function () {
         // Puntos: ajuste manual y consulta de balance de cualquier usuario
         Route::post('/usuarios/{usuario}/points-adjustment', [PointsController::class, 'adminAdjust']);
         Route::get('/usuarios/{usuario}/balance',            [PointsController::class, 'adminUserBalance']);
+
+        // Promociones — admin (lectura completa + mutaciones)
+        Route::get('/admin/promotions',                  [PromotionController::class, 'adminIndex']);
+        Route::post('/promotions',                       [PromotionController::class, 'store']);
+        Route::put('/promotions/{promotion}',            [PromotionController::class, 'update']);
+        Route::delete('/promotions/{promotion}',         [PromotionController::class, 'destroy']);
+        Route::post('/promotions/{promotion}/toggle',    [PromotionController::class, 'pause']);
     });
 
 });
