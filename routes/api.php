@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BroadcastController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PointsController;
@@ -125,6 +126,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Puntos: ajuste manual y consulta de balance de cualquier usuario
         Route::post('/usuarios/{usuario}/points-adjustment', [PointsController::class, 'adminAdjust']);
         Route::get('/usuarios/{usuario}/balance',            [PointsController::class, 'adminUserBalance']);
+
+        // Avisos push masivos
+        Route::get('/admin/broadcasts',                 [BroadcastController::class, 'index']);
+        Route::get('/admin/broadcasts/audience-stats',  [BroadcastController::class, 'audienceStats']);
+        Route::post('/admin/broadcasts',                [BroadcastController::class, 'store']);
 
         // Promociones — admin (lectura completa + mutaciones)
         Route::get('/admin/promotions',                  [PromotionController::class, 'adminIndex']);
