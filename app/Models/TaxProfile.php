@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class TaxProfile extends Model
 {
     protected $fillable = [
-        'user_id', 'rfc', 'razon_social', 'regimen_fiscal_sat',
-        'uso_cfdi_default', 'cp_fiscal', 'email_facturacion',
+        'user_id', 'rfc', 'razon_social', 'tipo_persona',
+        'nombre', 'apellido_paterno', 'apellido_materno', 'nombre_fiscal',
+        'regimen_fiscal_sat', 'uso_cfdi_default', 'cp_fiscal', 'email_facturacion',
         'alias', 'is_default', 'facturapi_customer_id', 'validated_at',
     ];
 

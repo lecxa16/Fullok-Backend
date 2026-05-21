@@ -115,6 +115,11 @@ class TaxProfileController extends Controller
         return $request->validate([
             'rfc' => ['required', 'string', 'min:12', 'max:13'],
             'razon_social' => ['required', 'string', 'max:200'],
+            'tipo_persona' => ['nullable', 'in:fisica,moral'],
+            'nombre' => ['nullable', 'string', 'max:100'],
+            'apellido_paterno' => ['nullable', 'string', 'max:100'],
+            'apellido_materno' => ['nullable', 'string', 'max:100'],
+            'nombre_fiscal' => ['nullable', 'string', 'max:200'],
             'regimen_fiscal_sat' => ['required', 'string', 'max:5'],
             'uso_cfdi_default' => ['nullable', 'string', 'max:5'],
             'cp_fiscal' => ['required', 'string', 'size:5'],
