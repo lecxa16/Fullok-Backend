@@ -12,6 +12,9 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./public:/var/www/html/public:ro
+      # Mount storage en read-only para que Caddy pueda servir uploads
+      # (tickets/, rewards/, etc.) vía el symlink public/storage.
+      - /root/fullok/data/storage:/var/www/html/storage:ro
       - /root/fullok/data/admin-dist:/srv/admin:ro
       - /root/fullok/data/caddy/data:/data
       - /root/fullok/data/caddy/config:/config
