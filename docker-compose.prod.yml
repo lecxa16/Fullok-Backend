@@ -19,10 +19,12 @@ services:
       - /root/fullok/data/caddy/data:/data
       - /root/fullok/data/caddy/config:/config
       - /root/fullok/logs:/var/log/caddy
+      - /root/sites-enabled:/etc/caddy/sites:ro
     depends_on:
       - app
     networks:
       - fullok_net
+      - samgbakes_net
 
   app:
     build:
@@ -84,3 +86,5 @@ services:
 networks:
   fullok_net:
     driver: bridge
+  samgbakes_net:
+    external: true

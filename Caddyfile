@@ -63,3 +63,7 @@ admin.fullok.mx {
         format json
     }
 }
+
+# Additional sites (samgbakes, etc.) — dropped as snippets in /root/sites-enabled
+# on the host, mounted read-only at /etc/caddy/sites.
+import /etc/caddy/sites/*.caddy
